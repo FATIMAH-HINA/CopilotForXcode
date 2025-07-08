@@ -1,0 +1,176 @@
+#include <iostream> // For input/output operations (cin, cout)
+#include <string>   // For using std::string (student name, subject names)
+#include <vector>   // For using std::vector (dynamic arrays for subjects)
+#include <iomanip>  // For std::fixed, std::setprecision, std::setw (output formatting)
+#include <limits>   // For std::numeric_limits (input buffer clearing)
+#include <fstream>  // For file operations (ofstream)
+
+// Function to clear the console screen (platform-dependent)
+void clearScreen() {
+#ifdef _WIN32
+    system("cls"); // For Windows
+#else
+    // For Linux/macOS. May not work in all terminals.
+    // For robust control, consider ncurses or platform-specific APIs.
+    system("clear");
+#endif
+}
+
+// Function to calculate the grade based on percentage
+std::string calculateGrade(double percentage) {
+    if (percentage >= 90) return "A+";
+    else if (percentage >= 80) return "A";
+    else if (percentage >= 70) return "B+";
+    else if (percentage >= 60) return "B";
+    else if (percentage >= 50) return "C+";
+    else if (percentage >= 40) return "C";
+    else if (percentage >= 30) return "D+";
+    else if (percentage >= 20) return "D";
+    else if (percentage >= 10) return "E+";
+    else return "E";
+}
+
+int main() {
+    clearScreen(); // Clear screen at the start for a clean interface
+
+    std::cout << "\t------------------------------------------\n";
+    std::cout << "\t        Welcome to Marksheet Generator\n";
+    std::cout << "\t------------------------------------------\n\n";
+
+    // --- Student Information Variables ---
+    std::string studentName;
+    std::string fatherName;
+    std::string rollNumber;
+    const int MIN_SUBJECTS = 2; // Minimum number of subjects required
+    int numSubjects;
+
+    // --- Get Student Details ---
+    std::cout << "Enter Student Name: ";
+    std::getline(std::cin, studentName); // Use getline to capture full name with spaces
+
+    std::cout << "Enter Father's Name: ";
+    std::getline(std::cin, fatherName);
+
+    std::cout << "Enter Roll Number: ";
+    std::getline(std::cin, rollNumber);
+
+    std::cout << "Enter the number of subjects (minimum " << MIN_SUBJECTS << "): ";
+    // Input validation loop for number of subjects
+    while (!(std::cin >> numSubjects) || numSubjects < MIN_SUBJECTS) {
+        std::cout << "Invalid input. Please enter a number greater than or equal to " << MIN_SUBJECTS << ": ";
+        std::cin.clear(); // Clear the error flag
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+    }
+    // Consume the leftover newline character after reading numSubjects
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    // --- Subject Data Storage ---
+    std::vector<std::string> subjectNames(numSubjects);
+    std::vector<double> subjectMarks(numSubjects);
+    double totalMarks = 0;
+    const double MAX_MARKS_PER_SUBJECT = 100.0; // Assuming each subject is out of 100
+
+    // --- Get Marks for Each Subject ---
+    std::cout << "\n--- Enter Marks for Each Subject (out of " << static_cast<int>(MAX_MARKS_PER_SUBJECT) << ") ---\n";
+    for (int i = 0; i < numSubjects; ++i) {
+        std::cout << "Enter name for Subject " << i + 1 << ": ";
+        std::getline(std::cin, subjectNames[i]); // Get subject name
+
+        double marks;
+        std::cout << "Enter marks for " << subjectNames[i] << ": ";
+        // Input validation loop for marks
+        while (!(std::cin >> marks) || marks < 0 || marks > MAX_MARKS_PER_SUBJECT) {
+            std::cout << "Invalid marks. Please enter marks between 0 and " << static_cast<int>(MAX_MARKS_PER_SUBJECT) << ": ";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        subjectMarks[i] = marks;
+        totalMarks += marks; // Add marks to total
+        // Consume the leftover newline character after reading marks
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    // --- Calculations ---
+    double maxPossibleMarks = numSubjects * MAX_MARKS_PER_SUBJECT;
+    double percentage = (totalMarks / maxPossibleMarks) * 100.0;
+    
+    // Determine Pass/Fail Status (assuming 40% in each subject is required to pass)
+    bool passed = true;
+    const double PASSING_PERCENTAGE_PER_SUBJECT = 40.0;
+
+    for (double marks : subjectMarks) {
+        if (marks < (MAX_MARKS_PER_SUBJECT * (PASSING_PERCENTAGE_PER_SUBJECT / 100.0))) {
+            passed = false;
+            break; // Student failed in at least one subject
+        }
+    }
+    
+    // Overall pass/fail also depends on overall percentage (e.g., if overall 50% is required)
+    // For this example, we'll primarily use per-subject passing for the status,
+    // and overall percentage for the grade.
+    
+    std::string finalGrade = calculateGrade(percentage);
+
+    // If failed in any subject, overall grade can be adjusted to 'F' regardless of percentage
+    if (!passed) {
+        finalGrade = "F";
+    }
+
+    // --- Display Marksheet on Console ---
+    clearScreen(); // Clear screen before displaying the final marksheet for a clean look
+
+    std::cout << "\n\t------------------------------------------\n";
+    std::cout << "\t             FINAL MARKSHEET\n";
+    std::cout << "\t------------------------------------------\n";
+    std::cout << std::left << std::setw(20) << "Student Name:" << studentName << std::endl;
+    std::cout << std::left << std::setw(20) << "Father's Name:" << fatherName << std::endl;
+    std::cout << std::left << std::setw(20) << "Roll Number:" << rollNumber << std::endl;
+    std::cout << "\t------------------------------------------\n";
+    std::cout << std::left << std::setw(25) << "Subject" << std::setw(10) << "Marks" << std::endl;
+    std::cout << "\t------------------------------------------\n";
+    for (int i = 0; i < numSubjects; ++i) {
+        std::cout << std::left << std::setw(25) << subjectNames[i]
+                  << std::setw(10) << std::fixed << std::setprecision(2) << subjectMarks[i] << std::endl;
+    }
+    std::cout << "\t------------------------------------------\n";
+    std::cout << std::left << std::setw(25) << "Total Marks:" << std::fixed << std::setprecision(2) << totalMarks << " / " << maxPossibleMarks << std::endl;
+    std::cout << std::left << std::setw(25) << "Percentage:" << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
+    std::cout << std::left << std::setw(25) << "Grade:" << finalGrade << std::endl;
+    std::cout << std::left << std::setw(25) << "Status:" << (passed ? "PASS" : "FAIL") << std::endl;
+    std::cout << "\t------------------------------------------\n";
+
+    // --- Save Marksheet to File ---
+    std::string filename = rollNumber + "_" + studentName + "_Marksheet.txt";
+    std::ofstream outFile(filename); // Open a file for writing
+
+    if (outFile.is_open()) {
+        outFile << "------------------------------------------\n";
+        outFile << "             STUDENT MARKSHEET\n";
+        outFile << "------------------------------------------\n";
+        outFile << std::left << std::setw(20) << "Student Name:" << studentName << std::endl;
+        outFile << std::left << std::setw(20) << "Father's Name:" << fatherName << std::endl;
+        outFile << std::left << std::setw(20) << "Roll Number:" << rollNumber << std::endl;
+        outFile << "------------------------------------------\n";
+        outFile << std::left << std::setw(25) << "Subject" << std::setw(10) << "Marks" << std::endl;
+        outFile << "------------------------------------------\n";
+        for (int i = 0; i < numSubjects; ++i) {
+            outFile << std::left << std::setw(25) << subjectNames[i]
+                    << std::setw(10) << std::fixed << std::setprecision(2) << subjectMarks[i] << std::endl;
+        }
+        outFile << "------------------------------------------\n";
+        outFile << std::left << std::setw(25) << "Total Marks:" << std::fixed << std::setprecision(2) << totalMarks << " / " << maxPossibleMarks << std::endl;
+        outFile << std::left << std::setw(25) << "Percentage:" << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
+        outFile << std::left << std::setw(25) << "Grade:" << finalGrade << std::endl;
+        outFile << std::left << std::setw(25) << "Status:" << (passed ? "PASS" : "FAIL") << std::endl;
+        outFile << "------------------------------------------\n";
+        outFile.close(); // Close the file
+        std::cout << "\nMarksheet saved to " << filename << std::endl;
+    } else {
+        std::cerr << "\nError: Unable to save marksheet to file.\n";
+    }
+
+    std::cout << "\nPress Enter to exit the application.";
+    std::cin.get(); // Wait for user to press Enter before closing
+
+    return 0; // Indicate successful execution
+}
